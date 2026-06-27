@@ -2,6 +2,7 @@
 #define USBCOM_H
 
 #include <string>
+#include <vector>
 
 class UsbCom
 {
@@ -14,6 +15,7 @@ public:
     bool sendAT();
     bool GPSOn();
     std::string GPSRead();
+    static std::vector<std::string> split(const std::string &s, char delim);
 
 private:
     std::string device_;

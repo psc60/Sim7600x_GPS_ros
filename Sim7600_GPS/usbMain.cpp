@@ -20,5 +20,8 @@ int main()
         return 1;
     }
 
+    // std::string GPSInfo = usb.GPSRead();
+    // auto fields = usb.split(GPSInfo, ',');
+
     return 0;
 }

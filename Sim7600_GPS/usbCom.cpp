@@ -9,6 +9,11 @@
 #include <termios.h>
 #include <sys/select.h>
 
+#include <string>
+#include <sstream>
+#include <vector>
+#include <iomanip>
+
 // Constructor (Creating UsbCom Object, provides port ["ttyUSB2"] and baudrate [115200])
 UsbCom::UsbCom(const std::string &device, int baudRate)
     : device_(device), baudRate_(baudRate), fd_(-1) {}
@@ -107,7 +112,7 @@ void UsbCom::configureSerial()
  */
 bool UsbCom::sendAT()
 {
-    if (fd_ < 0)
+    if (fd_ < 0) // Check if fd_ is still open
         return false;
 
     const char *cmd = "AT\r"; // Set command msg AT
@@ -134,7 +139,7 @@ bool UsbCom::sendAT()
  */
 bool UsbCom::waitForOK(int timeoutSeconds)
 {
-    if (fd_ < 0)
+    if (fd_ < 0) // Check if fd_ is still open
         return false;
 
     std::string received;
@@ -205,7 +210,7 @@ bool UsbCom::waitForOK(int timeoutSeconds)
  */
 bool UsbCom::GPSOn()
 {
-    if (fd_ < 0)
+    if (fd_ < 0) // Check if fd_ is still open
         return false;
 
     const char *cmd = "AT+CGPS=1\r"; // Msg for activating Sim GPS
@@ -224,15 +229,14 @@ bool UsbCom::GPSOn()
 }
 
 /**
- * Incomplete
  * Sends AT+CGPSINFO to retrieve gps location
- * Then returns information as a string for reading into
+ * Then returns information as a string in form "lat,log,alt"
  *
- * @return false if failed reading, true if OK received.
+ * @return string "" if failed, or CPGS information.
  */
 std::string UsbCom::GPSRead()
 {
-    if (fd_ < 0)
+    if (fd_ < 0) // Check if fd_ is still open
         return "\0";
 
     const char *cmd = "AT+CGPSINFO\r"; // Set command msg AT
@@ -243,7 +247,9 @@ std::string UsbCom::GPSRead()
         return "";
     }
 
-    std::string received;
+    std::string GPSReceived;
+    std::string latDD, latMM, logDD, logMM, sLat, sLog;
+    float Lat, Log;
     char buffer[256];
 
     while (true)
@@ -278,15 +284,82 @@ std::string UsbCom::GPSRead()
         if (n > 0)
         {
             buffer[n] = '\0';
-            received += buffer;
+            GPSReceived += buffer;
+            std::cout << buffer << std::flush;
 
-            if (received.find("OK") != std::string::npos ||
-                received.find("ERROR") != std::string::npos)
+            if (GPSReceived.find(",,,,,,,,") != std::string::npos)
             {
-                break;
+                std::cout << "\nStill Locating...\n";
+                return "";
             }
+
+            auto colonPos = GPSReceived.find(':');
+            if (colonPos == std::string::npos)
+            {
+                std::cerr << "Invalid input\n";
+                return "";
+            }
+
+            std::string data = GPSReceived.substr(colonPos + 1);
+            if (!data.empty() && data.front() == ' ')
+            {
+                data.erase(0, 1);
+            }
+
+            auto fields = split(data, ',');
+            if (fields.size() < 4)
+            {
+                std::cerr << "Not enough fields\n";
+                return "";
+            }
+
+            std::string lat = fields[0]; // Derives lattitude number
+            std::string lon = fields[2]; // Derives longitude number
+            std::string alt = fields[6]; // Derives Altitude
+
+            latDD = lat.substr(0, 2);
+            latMM = lat.substr(2);
+
+            Lat = std::stoi(latDD) + (std::stof(latMM) / 60);
+
+            if (fields[1] == "N")
+                sLat = std::to_string(Lat);
+            else if (fields[1] == "S")
+                sLat = std::to_string(0 - Lat);
+
+            logDD = lon.substr(0, 3);
+            logMM = lon.substr(3);
+
+            Log = std::stoi(logDD) + (std::stof(logMM) / 60);
+
+            if (fields[3] == "E")
+                sLog = std::to_string(Log);
+            else if (fields[3] == "W")
+                sLog = std::to_string(0 - Log);
+
+            GPSReceived = sLat + ", " + sLog + ", " + alt; // Updated for altitude
+            return GPSReceived;
         }
     }
 
-    return received;
+    return "";
+}
+
+/**
+ * Takes in a string and separates it into parts through the delimiter
+ *
+ * @param s string spaced with commas
+ * @param delim delimiter (comma) for separating fields
+ * @return the parts as split by the delimiter.
+ */
+std::vector<std::string> UsbCom::split(const std::string &s, char delim)
+{
+    std::vector<std::string> parts;
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim))
+    {
+        parts.push_back(item);
+    }
+    return parts;
 }
