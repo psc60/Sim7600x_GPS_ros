@@ -2,6 +2,7 @@
 #define USBCOM_H
 
 #include <string>
+#include <vector>
 
 class UsbCom
 {
@@ -12,7 +13,9 @@ public:
     bool openPort();
     void closePort();
     bool sendAT();
-    bool waitForOK(int timeoutSeconds = 3);
+    bool GPSOn();
+    std::string GPSRead();
+    static std::vector<std::string> split(const std::string &s, char delim);
 
 private:
     std::string device_;
@@ -20,6 +23,7 @@ private:
     int fd_;
 
     void configureSerial();
+    bool waitForOK(int timeoutSeconds = 3);
 };
 
 #endif

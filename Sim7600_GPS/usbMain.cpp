@@ -15,10 +15,13 @@ int main()
         return 1;
     }
 
-    if (usb.waitForOK(3))
+    if (!usb.GPSOn())
     {
-        std::cout << "\nReceived OK once, stopping.\n";
+        return 1;
     }
+
+    // std::string GPSInfo = usb.GPSRead();
+    // auto fields = usb.split(GPSInfo, ',');
 
     return 0;
 }
