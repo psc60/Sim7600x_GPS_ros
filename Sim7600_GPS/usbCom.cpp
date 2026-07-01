@@ -290,7 +290,8 @@ std::string UsbCom::GPSRead()
             if (GPSReceived.find(",,,,,,,,") != std::string::npos)
             {
                 std::cout << "\nStill Locating...\n";
-                return "";
+                // return "";
+                continue;
             }
 
             auto colonPos = GPSReceived.find(':');
@@ -300,17 +301,17 @@ std::string UsbCom::GPSRead()
                 return "";
             }
 
-            std::string data = GPSReceived.substr(colonPos + 1);
-            if (!data.empty() && data.front() == ' ')
-            {
-                data.erase(0, 1);
-            }
+            std::string data = GPSReceived.substr(colonPos + 2); // Use +1 and code below for stability
+            // if (!data.empty() && data.front() == ' ')
+            // {
+            //     data.erase(0, 1);
+            // }
 
             auto fields = split(data, ',');
             if (fields.size() < 4)
             {
                 std::cerr << "Not enough fields\n";
-                return "";
+                continue;
             }
 
             std::string lat = fields[0]; // Derives lattitude number
