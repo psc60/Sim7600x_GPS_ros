@@ -5,7 +5,7 @@
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/string.hpp"
+// #include "std_msgs/msg/string.hpp"
 
 using namespace std::chrono_literals;
 
@@ -19,26 +19,6 @@ public:
         auto timer_callback =
         [this]() -> void {
             std::string usb.GPSAnswer = usb.GPSRead();
-            if (usb.GPSAnswer=="") 
-            {
-                RCLCPP_INFO(this->get_logger(), "Not able to return information");
-                continue;
-            }
-            auto fields = usb.split(usb.GPSAnswer, ',');
-
-            float lat = fields[0]; // Derives lattitude number
-            float lon = fields[1]; // Derives longitude number
-            float altitude = fields[2]; // Derives Altitude
-
-			auto navMsg = std_msgs::msg::NavSatFix(
-				header(),
-				status(),
-				latitude(lat),
-				longitude(log),
-				altitude(altitude),
-				position_covariance(), // To be calclated manually?
-				position_covariance_type(0) // UNKNOWN
-			);								// CHANGE
 
 			RCLCPP_INFO_STREAM(this->get_logger(), "Publishing: '" << navMsg.header << "'");
 			publisher_->publish(navMsg);        
@@ -57,7 +37,6 @@ int main(int argc, char * argv[])
     UsbCom usb("/dev/ttyUSB2", 115200);
     if (!usb.openPort()) return 1;
     if (!usb.sendAT()) return 1;
-    if (!usb.GPSOn()) return 1;
     
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<MinimalPublisher>());

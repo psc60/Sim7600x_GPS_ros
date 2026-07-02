@@ -289,7 +289,7 @@ std::string UsbCom::GPSRead()
 
             if (GPSReceived.find(",,,,,,,,") != std::string::npos)
             {
-                std::cout << "\nStill Locating...\n";
+                std::cout << "Still Locating...\n";
                 // return "";
                 continue;
             }
@@ -348,6 +348,8 @@ std::string UsbCom::GPSRead()
 
 /**
  * Takes in a string and separates it into parts through the delimiter
+ * 
+ * Included as a class function to avoid errors
  *
  * @param s string spaced with commas
  * @param delim delimiter (comma) for separating fields
